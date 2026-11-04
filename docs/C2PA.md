@@ -46,4 +46,4 @@ Automated tests cover:
 - Distinguishing an absent manifest from an SDK error.
 - A real SDK smoke test against an unsigned JPEG.
 
-A real signed-image fixture and end-to-end positive signature validation test remain future work. Until that fixture is added, the project should not claim its own positive signed-manifest verification path has been independently tested.
+The test suite now creates a disposable signed JPEG during the test run using a generated ES256 key pair and a self-signed test certificate. It then sends that signed asset through EL-VERIFY's real C2PA inspection function and checks that the manifest and signature validation findings are returned. The test certificate is intentionally not a public trust anchor: this verifies the signed-manifest processing path, not production signer trust or certificate-chain acceptance. The unsigned-image SDK smoke test remains in place as a separate negative case.
