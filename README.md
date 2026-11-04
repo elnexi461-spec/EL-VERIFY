@@ -53,6 +53,14 @@ C2PA remote manifest fetching and OCSP network fetching are disabled in the curr
 - docs/ — architecture, roadmap, responsible-use and contribution guidance.
 - .github/workflows/ — automated backend tests.
 
+## Deployment
+
+A Dockerfile is included for container-based hosting. Build from the repository root with `docker build -t el-verify .` and run with `docker run --rm -p 8000:8000 el-verify`. Review rate limiting, monitoring, trust-anchor configuration and deployment security before exposing an instance publicly.
+
+## C2PA verification notes
+
+See [docs/C2PA.md](docs/C2PA.md) for the Content Credentials trust model, result statuses, privacy controls and current test coverage.
+
 ## Responsible-use principles
 
 - Automated model scores are indicators, not verdicts.
