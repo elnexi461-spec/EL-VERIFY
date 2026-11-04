@@ -9,10 +9,14 @@
 - [ ] Choose and add an open-source license.
 
 ## Milestone 1 — Image evidence
-- [ ] Add safe metadata display and export.
-- [ ] Add file signature validation and robust upload tests.
-- [ ] Research C2PA / Content Credentials support.
-- [ ] Document limits of metadata and provenance.
+- [x] Return file size, dimensions, format, SHA-256 and metadata indicators.
+- [x] Validate decoded image format against declared upload content type.
+- [x] Add upload size and image pixel-count limits.
+- [x] Add tests for invalid files and unsupported formats.
+- [ ] Run the test suite and add continuous integration.
+- [ ] Add safe metadata export.
+- [ ] Research and document C2PA / Content Credentials verification.
+- [ ] Document metadata and provenance limitations.
 
 ## Milestone 2 — Source verification
 - [ ] Build safe URL parsing and domain information checks.
