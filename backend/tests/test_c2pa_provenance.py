@@ -246,3 +246,41 @@ def test_real_signed_image_manifest_is_read_and_signature_is_reported(tmp_path, 
     assert result["manifest"]["assertion_labels"]
     assert result["validation_state"] != "not_reported"
     assert isinstance(result["validation_results"], list)
+
+    # Change bytes in the JPEG entropy-coded image data while leaving the
+    # embedded APP11/JUMBF manifest untouched. This should preserve the
+    # manifest but break its hard binding to the image bytes.
+    signed_bytes = signed_path.read_bytes()
+    sos_marker = signed_bytes.find(b"\\xff\\xda")
+    assert sos_marker >= 0, "Signed JPEG must contain a Start Of Scan marker"
+    sos_length = int.from_bytes(signed_bytes[sos_marker + 2:sos_marker + 4], "big")
+    entropy_start = sos_marker + 2 + sos_length
+    eoi_marker = signed_bytes.rfind(b"\\xff\\xd9")
+    assert entropy_start < eoi_marker, "Signed JPEG must contain image scan data"
+
+    candidate_positions = range(entropy_start + 8, eoi_marker - 1)
+    mutation_position = next(
+        (position for position in candidate_positions if signed_bytes[position] != 0xFF),
+        None,
+    )
+    assert mutation_position is not None, "Could not find a safe JPEG scan byte to mutate"
+    tampered_bytes = bytearray(signed_bytes)
+    tampered_bytes[mutation_position] ^= 0x01
+    tampered_path = tmp_path / "tampered.jpg"
+    tampered_path.write_bytes(tampered_bytes)
+
+    tampered_result = inspect_c2pa_provenance(tampered_path.read_bytes(), "JPEG")
+    assert tampered_result["status"] == "found", (
+        "The original C2PA manifest should remain readable after image-data tampering"
+    )
+    findings = tampered_result["validation_results"]
+    assert any(
+        item.get("success") is False
+        or any(
+            marker in str(item.get("code", "")).lower()
+            for marker in ("mismatch", "invalid", "hash")
+        )
+        for item in findings
+    ) or tampered_result["validation_state"].lower() not in ("valid", "trusted"), (
+        "Tampering should produce a validation finding, not a clean validation result"
+    )
