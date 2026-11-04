@@ -33,5 +33,7 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+      - name: Check frontend JavaScript syntax
+        run: node --check frontend/app.js
       - name: Build Docker image
         run: docker build -t el-verify .
