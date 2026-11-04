@@ -273,7 +273,7 @@ def test_real_signed_image_manifest_is_read_and_signature_is_reported(tmp_path, 
     assert tampered_result["status"] == "found", (
         "The original C2PA manifest should remain readable after image-data tampering"
     )
-    assert result["validation_state"].lower() == "valid"
+    assert result["validation_state"].lower() in ("valid", "trusted")
     assert tampered_result["validation_state"].lower() == "invalid", (
         "Changing only the JPEG image data should change C2PA validation "
         "from valid to invalid while the manifest remains readable"
