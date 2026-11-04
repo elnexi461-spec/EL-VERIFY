@@ -37,3 +37,15 @@ jobs:
         run: node --check frontend/app.js
       - name: Build Docker image
         run: docker build -t el-verify .
+      - name: Smoke test container
+        run: |
+          docker run -d --name el-verify -p 8000:8000 el-verify
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8000/api/health; then
+              curl -fsSL http://127.0.0.1:8000/ | grep -q "EL-VERIFY"
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs el-verify
+          exit 1
