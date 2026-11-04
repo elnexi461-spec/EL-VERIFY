@@ -1,8 +1,18 @@
+import io
+
 from fastapi.testclient import TestClient
+from PIL import Image
 
 from app.main import app
 
 client = TestClient(app)
+
+
+def make_png():
+    image = Image.new("RGB", (2, 2), "white")
+    buffer = io.BytesIO()
+    image.save(buffer, format="PNG")
+    return buffer.getvalue()
 
 
 def test_pdf_upload_is_rejected_as_unsupported_type():
@@ -27,17 +37,12 @@ def test_upload_over_10mb_is_rejected():
 
 
 def test_declared_type_must_match_actual_image_content():
-    # PNG signature and payload are deliberately declared as JPEG.
-    png_content = (
-        b"\x89PNG\r\n\x1a\n"
-        b"\x00\x00\x00\rIHDR"
-        b"\x00\x00\x00\x01\x00\x00\x00\x01"
-        b"\x08\x02\x00\x00\x00"
-        b"\x90wS\xde"
-    )
     response = client.post(
         "/api/images/inspect",
-        files={"file": ("mismatch.jpg", png_content, "image/jpeg")},
+        files={"file": ("mismatch.jpg", make_png(), "image/jpeg")},
     )
 
-    assert response.status_code == 400 or response.status_code == 415
+    assert response.status_code == 415
+    assert response.json()["detail"] == (
+        "The uploaded file content does not match its declared image type."
+    )
