@@ -34,7 +34,11 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
       - name: Check frontend JavaScript syntax
-        run: node --check frontend/app.js
+        run: |
+          node --check frontend/report-export.js
+          node --check frontend/app.js
+      - name: Test report export
+        run: node --test frontend/tests/*.test.js
       - name: Build Docker image
         run: docker build -t el-verify .
       - name: Smoke test container
