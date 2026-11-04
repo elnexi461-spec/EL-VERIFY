@@ -4,7 +4,7 @@
 
 EL-VERIFY is a public digital trust and verification project. Its open-source license is still being selected. It helps people inspect digital content and review provenance information using transparent, evidence-based checks.
 
-> **Status:** MVP implemented. The 12-test backend suite, frontend JavaScript check, Docker build and container smoke test pass in GitHub Actions. A real signed-image fixture test and public production deployment remain pending. No AI-image or deepfake detection capability is claimed.
+> **Status:** MVP implemented. The 13-test backend suite, frontend JavaScript check, Docker build and container smoke test pass in GitHub Actions. A real signed-image and content-tampering integration test is included; public production deployment remains pending. No AI-image or deepfake detection capability is claimed.
 
 ## MVP capabilities
 
