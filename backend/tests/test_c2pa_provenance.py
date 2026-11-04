@@ -84,3 +84,14 @@ def test_sdk_errors_are_not_misreported_as_absence(monkeypatch):
     monkeypatch.setitem(sys.modules, "c2pa", SimpleNamespace(Context=FakeContext, Reader=BrokenReader))
     result = inspect_c2pa_provenance(b"fake image bytes", "WEBP")
     assert result["status"] == "unable_to_read"
+
+
+def test_official_sdk_reads_unsigned_jpeg_without_remote_fetches(tmp_path):
+    from PIL import Image
+
+    image_path = tmp_path / "plain.jpg"
+    Image.new("RGB", (8, 8), "white").save(image_path, format="JPEG")
+    result = inspect_c2pa_provenance(image_path.read_bytes(), "JPEG")
+
+    assert result["status"] == "absent"
+    assert "does not mean" in result["interpretation"]
