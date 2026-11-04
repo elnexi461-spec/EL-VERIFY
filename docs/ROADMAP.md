@@ -6,7 +6,8 @@
 - [x] Add basic image metadata and hash inspection.
 - [x] Add upload validation and image pixel-count limits.
 - [x] Add API, service and C2PA test coverage.
-- [ ] Confirm CI passes on GitHub Actions.
+- [x] Confirm backend tests pass on GitHub Actions.
+- [x] Build and smoke-test the Docker container.
 - [ ] Choose and add an open-source license.
 
 ## Milestone 1 — Image evidence and provenance
@@ -15,7 +16,8 @@
 - [x] Disable remote manifest and OCSP fetching in the upload workflow.
 - [x] Return selected manifest and SDK validation details.
 - [x] Build browser-based image upload and evidence report.
-- [ ] Verify C2PA behaviour against real signed and unsigned fixture images.
+- [x] Verify unsigned-image behaviour with the real C2PA SDK.
+- [ ] Add a real signed-image fixture and positive signature-validation test.
 - [ ] Add safe report export.
 - [ ] Review trust-anchor configuration and validation UX.
 
