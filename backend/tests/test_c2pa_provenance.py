@@ -278,6 +278,3 @@ def test_real_signed_image_manifest_is_read_and_signature_is_reported(tmp_path, 
         "Changing only the JPEG image data should change C2PA validation "
         "from valid to invalid while the manifest remains readable"
     )
-        "Tampering should produce an explicit content-hash or binding mismatch finding. "
-        f"State={tampered_result['validation_state']}; findings={findings!r}"
-    )
