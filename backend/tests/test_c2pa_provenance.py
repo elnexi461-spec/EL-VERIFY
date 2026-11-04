@@ -251,11 +251,11 @@ def test_real_signed_image_manifest_is_read_and_signature_is_reported(tmp_path, 
     # embedded APP11/JUMBF manifest untouched. This should preserve the
     # manifest but break its hard binding to the image bytes.
     signed_bytes = signed_path.read_bytes()
-    sos_marker = signed_bytes.find(b"\\xff\\xda")
+    sos_marker = signed_bytes.find(b"\xff\xda")
     assert sos_marker >= 0, "Signed JPEG must contain a Start Of Scan marker"
     sos_length = int.from_bytes(signed_bytes[sos_marker + 2:sos_marker + 4], "big")
     entropy_start = sos_marker + 2 + sos_length
-    eoi_marker = signed_bytes.rfind(b"\\xff\\xd9")
+    eoi_marker = signed_bytes.rfind(b"\xff\xd9")
     assert entropy_start < eoi_marker, "Signed JPEG must contain image scan data"
 
     candidate_positions = range(entropy_start + 8, eoi_marker - 1)
