@@ -142,7 +142,7 @@ def test_real_signed_image_manifest_is_read_and_signature_is_reported(tmp_path):
             critical=True,
         )
         .add_extension(
-            x509.ExtendedKeyUsage([ExtendedKeyUsageOID.CODE_SIGNING]),
+            x509.ExtendedKeyUsage([ExtendedKeyUsageOID.EMAIL_PROTECTION]),
             critical=False,
         )
         .sign(private_key, hashes.SHA256())
