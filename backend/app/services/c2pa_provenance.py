@@ -54,10 +54,23 @@ def _manifest_summary(store):
     if not isinstance(ingredients, list):
         ingredients = []
 
+    claim_generator = active.get("claim_generator")
+    if not isinstance(claim_generator, str) or not claim_generator.strip():
+        generator_info = active.get("claim_generator_info")
+        if isinstance(generator_info, list):
+            names = [
+                str(item.get("name", "")).strip()
+                for item in generator_info
+                if isinstance(item, dict) and item.get("name")
+            ]
+            claim_generator = ", ".join(names)
+        else:
+            claim_generator = ""
+
     return {
         "available": True,
         "title": str(active.get("title", ""))[:300] or None,
-        "claim_generator": str(active.get("claim_generator", ""))[:300] or None,
+        "claim_generator": str(claim_generator)[:300] or None,
         "signature_info": {
             key: str(signature[key])[:300]
             for key in ("alg", "issuer", "time")
