@@ -1,4 +1,5 @@
 import io
+import struct
 
 import pytest
 from PIL import Image
@@ -41,7 +42,9 @@ def test_unsupported_decoded_format_is_rejected():
         inspect_image(content)
 
 
-def test_excessive_dimensions_are_rejected_before_decode():
-    content = make_image(size=(6500, 6500))
+def test_excessive_dimensions_are_rejected_without_allocating_large_image():
+    # PNG stores width and height as big-endian uint32 values in its IHDR.
+    content = bytearray(make_image())
+    content[16:24] = struct.pack(">II", 6500, 6500)
     with pytest.raises(ValueError, match="safety limit"):
-        inspect_image(content)
+        inspect_image(bytes(content))
