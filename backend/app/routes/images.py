@@ -1,5 +1,6 @@
 from fastapi import APIRouter, File, HTTPException, UploadFile
 
+from app.services.c2pa_provenance import inspect_c2pa_provenance
 from app.services.image_inspection import inspect_image
 
 router = APIRouter(prefix="/images", tags=["image inspection"])
@@ -33,4 +34,6 @@ async def inspect_uploaded_image(file: UploadFile = File(...)):
             status_code=415,
             detail="The uploaded file content does not match its declared image type.",
         )
+
+    result["provenance"] = inspect_c2pa_provenance(content, result["format"])
     return result
