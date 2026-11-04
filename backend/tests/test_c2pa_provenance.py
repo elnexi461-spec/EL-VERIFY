@@ -97,7 +97,7 @@ def test_official_sdk_reads_unsigned_jpeg_without_remote_fetches(tmp_path):
     assert "does not mean" in result["interpretation"]
 
 
-def test_real_signed_image_manifest_is_read_and_signature_is_reported(tmp_path):
+def test_real_signed_image_manifest_is_read_and_signature_is_reported(tmp_path, monkeypatch):
     """Create a disposable self-signed C2PA asset and inspect it with the real SDK.
 
     The test certificate is intentionally self-signed. It exercises manifest
@@ -142,7 +142,7 @@ def test_real_signed_image_manifest_is_read_and_signature_is_reported(tmp_path):
             critical=True,
         )
         .add_extension(
-            x509.ExtendedKeyUsage([ExtendedKeyUsageOID.EMAIL_PROTECTION]),
+            x509.ExtendedKeyUsage([ExtendedKeyUsageOID.CODE_SIGNING]),
             critical=False,
         )
         .sign(private_key, hashes.SHA256())
@@ -178,7 +178,11 @@ def test_real_signed_image_manifest_is_read_and_signature_is_reported(tmp_path):
         ta_url=None,
     )
     settings = c2pa.Settings.from_dict({
-        "verify": {"remote_manifest_fetch": False, "ocsp_fetch": False},
+        "verify": {
+            "remote_manifest_fetch": False,
+            "ocsp_fetch": False,
+            "verify_after_sign": False,
+        },
         "builder": {"thumbnail": {"enabled": False}},
     })
     with c2pa.Context(settings) as signing_context:
@@ -187,6 +191,16 @@ def test_real_signed_image_manifest_is_read_and_signature_is_reported(tmp_path):
                 with open(signed_path, "w+b") as destination:
                     builder.sign(signer, "image/jpeg", source, destination)
 
+    # Trust this ephemeral end-entity certificate only for this test read.
+    # Production inspection continues to use the SDK trust configuration.
+    original_from_dict = c2pa.Context.from_dict
+
+    def test_context(settings):
+        test_settings = dict(settings)
+        test_settings["trust"] = {"allowed_list": cert_pem.decode("ascii")}
+        return original_from_dict(test_settings)
+
+    monkeypatch.setattr(c2pa.Context, "from_dict", staticmethod(test_context))
     result = inspect_c2pa_provenance(signed_path.read_bytes(), "JPEG")
 
     assert result["status"] == "found"
