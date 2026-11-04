@@ -8,7 +8,7 @@ EL-VERIFY is a public digital trust and verification project. Its open-source li
 
 ## MVP capabilities
 
-- Browser-based image upload and evidence report.\n- User-controlled JSON export of technical findings, excluding uploaded image bytes and raw EXIF values.
+- Browser-based image upload and evidence report.\n- User-controlled JSON export of technical findings, excluding uploaded image bytes, original filenames and raw EXIF values.
 - SHA-256 fingerprint, file size, decoded format, dimensions and image mode.
 - EXIF tag identifiers and embedded metadata field names.
 - C2PA Content Credentials inspection using the official C2PA Python SDK.
