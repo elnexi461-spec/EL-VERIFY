@@ -1,5 +1,6 @@
 import io
 import struct
+import zlib
 
 import pytest
 from PIL import Image
@@ -46,5 +47,6 @@ def test_excessive_dimensions_are_rejected_without_allocating_large_image():
     # PNG stores width and height as big-endian uint32 values in its IHDR.
     content = bytearray(make_image())
     content[16:24] = struct.pack(">II", 6500, 6500)
+    content[29:33] = struct.pack(">I", zlib.crc32(content[12:29]) & 0xFFFFFFFF)
     with pytest.raises(ValueError, match="safety limit"):
         inspect_image(bytes(content))
