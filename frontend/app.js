@@ -19,7 +19,7 @@ function buildExportReport(data){
  };
 }
 function renderReport(data){
- latestReport=buildExportReport(data);
+ latestReport=window.ELVerifyReport.buildExportReport(data);
  const grid=document.querySelector("#summary-grid");grid.replaceChildren();
  [["Format",data.format],["Dimensions",data.width+" × "+data.height],["File size",formatBytes(data.file_size_bytes)],["Credentials",data.provenance.status.replaceAll("_"," ")]].forEach(([label,value])=>{const card=document.createElement("div"),small=document.createElement("small"),strong=document.createElement("strong");card.className="summary-card";small.textContent=label;strong.textContent=value;card.append(small,strong);grid.append(card)});
  const prov=data.provenance,p=document.querySelector("#provenance-content");p.replaceChildren();const pl=makeList();addRow(pl,"Result",prov.status.replaceAll("_"," "));if(prov.manifest_location)addRow(pl,"Manifest location",prov.manifest_location);if(prov.validation_state)addRow(pl,"SDK validation state",prov.validation_state);if(prov.message)addRow(pl,"Message",prov.message);if(prov.detail)addRow(pl,"Technical detail",prov.detail);if(prov.manifest?.claim_generator)addRow(pl,"Claim generator",prov.manifest.claim_generator);if(prov.manifest?.signature_info?.issuer)addRow(pl,"Signer / issuer",prov.manifest.signature_info.issuer);if(prov.manifest?.signature_info?.time)addRow(pl,"Signed time",prov.manifest.signature_info.time);if(prov.manifest?.assertion_labels?.length)addRow(pl,"Assertions",prov.manifest.assertion_labels.join(", "));if(prov.interpretation)addRow(pl,"How to read this",prov.interpretation);p.append(pl);
