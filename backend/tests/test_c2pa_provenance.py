@@ -98,11 +98,7 @@ def test_official_sdk_reads_unsigned_jpeg_without_remote_fetches(tmp_path):
 
 
 def test_real_signed_image_manifest_is_read_and_signature_is_reported(tmp_path, monkeypatch):
-    """Create a disposable self-signed C2PA asset and inspect it with the real SDK.
-
-    The test certificate is intentionally self-signed. It exercises manifest
-    creation and cryptographic signature processing, not public signer trust.
-    """
+    """Sign an image with a disposable CA/leaf chain and inspect its manifest."""
     import datetime
     import io
 
@@ -113,19 +109,49 @@ def test_real_signed_image_manifest_is_read_and_signature_is_reported(tmp_path, 
     from PIL import Image
     import c2pa
 
-    private_key = ec.generate_private_key(ec.SECP256R1())
-    subject = issuer = x509.Name([
+    now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+    root_key = ec.generate_private_key(ec.SECP256R1())
+    root_name = x509.Name([
+        x509.NameAttribute(NameOID.COMMON_NAME, "EL-VERIFY disposable test root"),
+    ])
+    root_certificate = (
+        x509.CertificateBuilder()
+        .subject_name(root_name)
+        .issuer_name(root_name)
+        .public_key(root_key.public_key())
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(now - datetime.timedelta(minutes=1))
+        .not_valid_after(now + datetime.timedelta(days=2))
+        .add_extension(x509.BasicConstraints(ca=True, path_length=0), critical=True)
+        .add_extension(
+            x509.KeyUsage(
+                digital_signature=True,
+                content_commitment=False,
+                key_encipherment=False,
+                data_encipherment=False,
+                key_agreement=False,
+                key_cert_sign=True,
+                crl_sign=True,
+                encipher_only=None,
+                decipher_only=None,
+            ),
+            critical=True,
+        )
+        .add_extension(x509.SubjectKeyIdentifier.from_public_key(root_key.public_key()), critical=False)
+        .sign(root_key, hashes.SHA256())
+    )
+    leaf_key = ec.generate_private_key(ec.SECP256R1())
+    leaf_name = x509.Name([
         x509.NameAttribute(NameOID.COMMON_NAME, "EL-VERIFY automated test signer"),
     ])
-    now = datetime.datetime.now(datetime.timezone.utc)
-    certificate = (
+    leaf_certificate = (
         x509.CertificateBuilder()
-        .subject_name(subject)
-        .issuer_name(issuer)
-        .public_key(private_key.public_key())
+        .subject_name(leaf_name)
+        .issuer_name(root_name)
+        .public_key(leaf_key.public_key())
         .serial_number(x509.random_serial_number())
-        .not_valid_before((now - datetime.timedelta(minutes=1)).replace(tzinfo=None))
-        .not_valid_after((now + datetime.timedelta(days=1)).replace(tzinfo=None))
+        .not_valid_before(now - datetime.timedelta(minutes=1))
+        .not_valid_after(now + datetime.timedelta(days=1))
         .add_extension(x509.BasicConstraints(ca=False, path_length=None), critical=True)
         .add_extension(
             x509.KeyUsage(
@@ -142,13 +168,23 @@ def test_real_signed_image_manifest_is_read_and_signature_is_reported(tmp_path, 
             critical=True,
         )
         .add_extension(
-            x509.ExtendedKeyUsage([ExtendedKeyUsageOID.CODE_SIGNING]),
+            x509.ExtendedKeyUsage([ExtendedKeyUsageOID.EMAIL_PROTECTION]),
             critical=False,
         )
-        .sign(private_key, hashes.SHA256())
+        .add_extension(x509.SubjectKeyIdentifier.from_public_key(leaf_key.public_key()), critical=False)
+        .add_extension(
+            x509.AuthorityKeyIdentifier.from_issuer_public_key(root_key.public_key()),
+            critical=False,
+        )
+        .sign(root_key, hashes.SHA256())
     )
-    cert_pem = certificate.public_bytes(serialization.Encoding.PEM)
-    key_pem = private_key.private_bytes(
+
+    root_pem = root_certificate.public_bytes(serialization.Encoding.PEM)
+    # C2PA expects the signer certificate followed by its issuing certificate.
+    cert_chain_pem = (
+        leaf_certificate.public_bytes(serialization.Encoding.PEM) + root_pem
+    )
+    key_pem = leaf_key.private_bytes(
         serialization.Encoding.PEM,
         serialization.PrivateFormat.PKCS8,
         serialization.NoEncryption(),
@@ -173,11 +209,12 @@ def test_real_signed_image_manifest_is_read_and_signature_is_reported(tmp_path, 
 
     signer_info = c2pa.C2paSignerInfo(
         alg=c2pa.C2paSigningAlg.ES256,
-        sign_cert=cert_pem,
+        sign_cert=cert_chain_pem,
         private_key=key_pem,
         ta_url=None,
     )
-    settings = c2pa.Settings.from_dict({
+    signing_settings = c2pa.Settings.from_dict({
+        "trust": {"user_anchors": root_pem.decode("ascii")},
         "verify": {
             "remote_manifest_fetch": False,
             "ocsp_fetch": False,
@@ -185,19 +222,19 @@ def test_real_signed_image_manifest_is_read_and_signature_is_reported(tmp_path, 
         },
         "builder": {"thumbnail": {"enabled": False}},
     })
-    with c2pa.Context(settings) as signing_context:
+    with c2pa.Context(signing_settings) as signing_context:
         with c2pa.Signer.from_info(signer_info) as signer:
             with c2pa.Builder(manifest, signing_context) as builder:
                 with open(signed_path, "w+b") as destination:
                     builder.sign(signer, "image/jpeg", source, destination)
 
-    # Trust this ephemeral end-entity certificate only for this test read.
-    # Production inspection continues to use the SDK trust configuration.
+    # Trust the ephemeral root only for this test's read. Production inspection
+    # continues to use its configured trust store and never trusts uploaded certs.
     original_from_dict = c2pa.Context.from_dict
 
     def test_context(settings):
         test_settings = dict(settings)
-        test_settings["trust"] = {"allowed_list": cert_pem.decode("ascii")}
+        test_settings["trust"] = {"user_anchors": root_pem.decode("ascii")}
         return original_from_dict(test_settings)
 
     monkeypatch.setattr(c2pa.Context, "from_dict", staticmethod(test_context))
@@ -209,5 +246,3 @@ def test_real_signed_image_manifest_is_read_and_signature_is_reported(tmp_path, 
     assert result["manifest"]["assertion_labels"]
     assert result["validation_state"] != "not_reported"
     assert isinstance(result["validation_results"], list)
-    # The SDK must return its validation state and findings. The self-signed
-    # certificate is deliberately not treated as a trusted signer.
