@@ -2,78 +2,97 @@
 
 **Verify What You See. Trust What You Know.**
 
-EL-VERIFY is a public digital trust and verification project. It helps people inspect digital content and review provenance information using transparent, evidence-based checks.
+EL-VERIFY is a project to help people check digital content and understand the evidence behind it. We are starting with images and their provenance, then plan to add tools for checking sources, public identity claims and the history of digital files.
 
-> **Status:** MVP implemented and deployed as a public demonstration at https://el-verify-demo.onrender.com/app/. Automated backend, frontend and Docker checks run through GitHub Actions. A real signed-image and content-tampering integration test is included. This is a demonstration service, not a production deployment. No AI-image or deepfake detection capability is claimed.
+> **Current status:** The first MVP is live as a public demo. You can upload an image, review its technical details and check whether it contains C2PA Content Credentials. The demo does not detect AI-generated images or decide whether an image is real or fake. It is a demonstration service, not a production service.
 
-## MVP capabilities
+**[Open the live demo](https://el-verify-demo.onrender.com/app/)**
 
-- Browser-based image upload and evidence report.
-- User-controlled JSON export of technical findings, excluding uploaded image bytes, original filenames and raw EXIF values.
-- SHA-256 fingerprint, file size, decoded format, dimensions and image mode.
-- EXIF tag identifiers and embedded metadata field names.
-- C2PA Content Credentials inspection using the official C2PA Python SDK.
-- Manifest summary, signer metadata, assertion labels and SDK validation findings when available.
-- Explicit distinction between credentials found, absent, unsupported, unavailable and unable to read.
-- Upload size, file type, pixel-count and image decoding safety checks.
-- Temporary file cleanup after C2PA inspection; no report history or persistent media gallery.
+## What you can do now
 
-## What the MVP does not do
+- Upload JPEG, PNG, WebP or TIFF images.
+- View the image format, file size, dimensions and SHA-256 fingerprint.
+- Review available EXIF metadata indicators.
+- Check for C2PA Content Credentials using the official C2PA Python SDK.
+- See whether credentials were found, are absent, or could not be read.
+- Export a JSON report of the technical findings.
 
-- It does not determine whether an image is real, fake, AI-generated or manipulated.
-- It does not establish that a statement inside a Content Credential is factually true.
-- It does not treat missing metadata or missing credentials as evidence of fraud.
-- It does not identify people in images or infer real-world identities.
+The report does not include the uploaded image, its original filename or raw EXIF values.
 
-## Run locally
+## What EL-VERIFY does not claim
 
-Use Python 3.10 or newer. From the repository root:
+The current MVP does not tell you whether an image is real, fake, AI-generated or manipulated. A missing credential does not mean an image has been edited. Even when credentials are present, that does not automatically prove that the content or the claims attached to it are true.
 
-    cd backend
-    python -m venv .venv
-    # Windows: .venv\\Scripts\\activate
-    # macOS/Linux: source .venv/bin/activate
-    pip install -r requirements.txt
-    uvicorn app.main:app --reload
+We want EL-VERIFY to show useful evidence and explain its limits, rather than give people a confident answer that the evidence cannot support.
 
-Open http://127.0.0.1:8000/ for the web interface or http://127.0.0.1:8000/docs for the API documentation.
+## The bigger idea
+
+The image checker is only the first part of EL-VERIFY. The wider project has five planned areas:
+
+- **EL-VISION:** inspect images and, after proper testing, other media for useful technical and manipulation evidence.
+- **EL-SOURCE:** help users check where content and claims came from, with links to supporting sources.
+- **EL-IDENTITY:** help review claims made by public profiles using independent public information. This will not use facial recognition.
+- **EL-TRACE:** help users understand file fingerprints, metadata and available provenance history.
+- **EL-INTELLIGENCE:** bring findings from the different checks into one clear report that people can review.
+
+These areas will be developed in stages. Most of them are still planned and are not available in the current demo.
+
+**[See the full roadmap](docs/ROADMAP.md)** for the planned work, current progress and the safeguards we intend to follow.
+
+## Run it locally
+
+You need Python 3.10 or newer.
+
+From the repository root:
+
+```bash
+cd backend
+python -m venv .venv
+
+# Windows
+.venv\\Scripts\\activate
+
+# macOS or Linux
+source .venv/bin/activate
+
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+```
+
+Open http://127.0.0.1:8000/ to use the interface, or http://127.0.0.1:8000/docs to view the API documentation.
 
 ## API
 
-- GET /api/health
-- POST /api/images/inspect
+- `GET /api/health`
+- `POST /api/images/inspect`
 
-The inspection endpoint accepts JPEG, PNG, WEBP and TIFF uploads up to 10 MB.
+The inspection endpoint accepts JPEG, PNG, WebP and TIFF images up to 10 MB.
 
-C2PA remote manifest fetching and OCSP network fetching are disabled in the current service configuration. This keeps submitted media from triggering arbitrary outbound requests. Trust evaluation still depends on the SDK's configured trust anchors and validation state.
+Remote C2PA manifest fetching and OCSP network requests are disabled during inspection. This helps prevent an uploaded file from causing unexpected outbound network requests.
 
-## Repository layout
+## Project structure
 
-- backend/ — FastAPI service and inspection modules.
-- frontend/ — browser interface (HTML, CSS and JavaScript).
-- docs/ — architecture, roadmap, responsible-use and contribution guidance.
-- .github/workflows/ — automated backend tests.
+- `backend/` contains the FastAPI service and image inspection code.
+- `frontend/` contains the browser interface.
+- `docs/` contains the architecture, roadmap, deployment and responsible-use notes.
+- `.github/workflows/` contains the automated checks.
 
-## Deployment
+## Try the demo or deploy your own
 
-A Dockerfile is included for container-based hosting. Build from the repository root with `docker build -t el-verify .` and run with `docker run --rm -p 8000:8000 el-verify`. Review rate limiting, monitoring, trust-anchor configuration and deployment security before exposing an instance publicly.
+The public demo is available at **[el-verify-demo.onrender.com](https://el-verify-demo.onrender.com/app/)**. It may take a little time to wake up after being idle.
 
-## Try the demo
+You can also [deploy your own copy to Render](https://render.com/deploy?repo=https://github.com/elnexi461-spec/EL-VERIFY). See [the deployment guide](docs/DEMO_DEPLOYMENT.md) for the steps.
 
-**Live demonstration:** https://el-verify-demo.onrender.com/app/. The deployment blueprint is included in `render.yaml`. [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/elnexi461-spec/EL-VERIFY) can create a separate instance in your Render account. Follow [docs/DEMO_DEPLOYMENT.md](docs/DEMO_DEPLOYMENT.md) to deploy and test it.
+## How we want to build it
 
-## C2PA verification notes
+- Show evidence and explain uncertainty.
+- Do not treat a model score as a verdict.
+- Do not treat missing metadata as proof of manipulation.
+- Do not identify people or guess their identity from their faces.
+- Respect privacy, platform rules and the rights of content owners.
+- Keep users in control of the content they submit.
 
-See [docs/C2PA.md](docs/C2PA.md) for the Content Credentials trust model, result statuses, privacy controls and current test coverage.
-
-## Responsible-use principles
-
-- Automated model scores are indicators, not verdicts.
-- Missing metadata is not proof of manipulation.
-- Identity assessments must not infer who a person is from an image.
-- Only analyze content the user is authorized to submit.
-- Do not scrape private content or bypass platform access controls.
-- Show evidence, uncertainty and limitations in every report.
+For more detail, see [Responsible Use](docs/RESPONSIBLE_USE.md), [Architecture](docs/ARCHITECTURE.md) and [C2PA notes](docs/C2PA.md).
 
 ## License
 
