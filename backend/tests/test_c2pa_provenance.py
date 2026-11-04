@@ -275,12 +275,10 @@ def test_real_signed_image_manifest_is_read_and_signature_is_reported(tmp_path, 
     )
     findings = tampered_result["validation_results"]
     assert any(
-        item.get("success") is False
-        or any(
-            marker in str(item.get("code", "")).lower()
-            for marker in ("mismatch", "invalid", "hash")
-        )
+        "mismatch" in str(item.get("code", "")).lower()
+        and ("hash" in str(item.get("code", "")).lower()
+             or "binding" in str(item.get("code", "")).lower())
         for item in findings
-    ) or tampered_result["validation_state"].lower() not in ("valid", "trusted"), (
-        "Tampering should produce a validation finding, not a clean validation result"
+    ), (
+        "Tampering should produce an explicit content-hash or binding mismatch finding"
     )
