@@ -2,7 +2,7 @@
 
 **Verify What You See. Trust What You Know.**
 
-EL-VERIFY is a public digital trust and verification project. Its open-source license is still being selected. It helps people inspect digital content and review provenance information using transparent, evidence-based checks.
+EL-VERIFY is a public digital trust and verification project. It helps people inspect digital content and review provenance information using transparent, evidence-based checks.
 
 > **Status:** MVP implemented and deployed as a public demonstration at https://el-verify-demo.onrender.com/app/. Automated backend, frontend and Docker checks run through GitHub Actions. A real signed-image and content-tampering integration test is included. This is a demonstration service, not a production deployment. No AI-image or deepfake detection capability is claimed.
 
@@ -77,4 +77,4 @@ See [docs/C2PA.md](docs/C2PA.md) for the Content Credentials trust model, result
 
 ## License
 
-License selection is pending. Until a license is added, do not assume the project is licensed for reuse.
+EL-VERIFY is released under the MIT License. See [LICENSE](LICENSE) for the full license text.
