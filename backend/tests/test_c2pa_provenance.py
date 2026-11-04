@@ -124,8 +124,8 @@ def test_real_signed_image_manifest_is_read_and_signature_is_reported(tmp_path):
         .issuer_name(issuer)
         .public_key(private_key.public_key())
         .serial_number(x509.random_serial_number())
-        .not_valid_before(now - datetime.timedelta(minutes=1))
-        .not_valid_after(now + datetime.timedelta(days=1))
+        .not_valid_before((now - datetime.timedelta(minutes=1)).replace(tzinfo=None))
+        .not_valid_after((now + datetime.timedelta(days=1)).replace(tzinfo=None))
         .add_extension(x509.BasicConstraints(ca=False, path_length=None), critical=True)
         .add_extension(
             x509.KeyUsage(
@@ -194,5 +194,6 @@ def test_real_signed_image_manifest_is_read_and_signature_is_reported(tmp_path):
     assert result["manifest"]["claim_generator"] is not None
     assert result["manifest"]["assertion_labels"]
     assert result["validation_state"] != "not_reported"
-    # A self-signed test certificate must not be presented as a trusted signer.
-    assert "trust" in result["interpretation"].lower() or result["validation_state"] != "Valid"
+    # Validation must expose signature findings. A self-signed test certificate
+    # is not evidence that the signer chains to a trusted root.
+    assert any("signature" in str(item.get("code", "")).lower() for item in result["validation_results"])
