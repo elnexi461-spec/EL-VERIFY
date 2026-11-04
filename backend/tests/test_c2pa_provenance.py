@@ -251,12 +251,32 @@ def test_real_signed_image_manifest_is_read_and_signature_is_reported(tmp_path, 
     # embedded APP11/JUMBF manifest untouched. This should preserve the
     # manifest but break its hard binding to the image bytes.
     signed_bytes = signed_path.read_bytes()
-    sos_marker = signed_bytes.find(b"\xff\xda")
-    assert sos_marker >= 0, "Signed JPEG must contain a Start Of Scan marker"
-    sos_length = int.from_bytes(signed_bytes[sos_marker + 2:sos_marker + 4], "big")
-    entropy_start = sos_marker + 2 + sos_length
-    eoi_marker = signed_bytes.rfind(b"\xff\xd9")
-    assert entropy_start < eoi_marker, "Signed JPEG must contain image scan data"
+    # Walk JPEG marker segments from SOI. A raw byte search could mistake
+    # marker-like bytes inside the embedded C2PA JUMBF payload for real markers.
+    marker_position = 2
+    entropy_start = None
+    while marker_position < len(signed_bytes) - 4:
+        if signed_bytes[marker_position] != 0xFF:
+            marker_position += 1
+            continue
+        while marker_position < len(signed_bytes) and signed_bytes[marker_position] == 0xFF:
+            marker_position += 1
+        marker = signed_bytes[marker_position]
+        marker_position += 1
+        if marker in (0xD8, 0xD9, 0x01) or 0xD0 <= marker <= 0xD7:
+            if marker == 0xD9:
+                break
+            continue
+        segment_length = int.from_bytes(
+            signed_bytes[marker_position:marker_position + 2], "big"
+        )
+        if marker == 0xDA:
+            entropy_start = marker_position + segment_length
+            break
+        marker_position += segment_length
+    assert entropy_start is not None, "Signed JPEG must contain a Start Of Scan marker"
+    eoi_marker = signed_bytes.find(b"\xff\xd9", entropy_start)
+    assert eoi_marker > entropy_start, "Signed JPEG must contain image scan data"
 
     candidate_positions = range(entropy_start + 8, eoi_marker - 1)
     mutation_position = next(
