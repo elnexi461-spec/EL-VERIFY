@@ -45,3 +45,24 @@ def test_image_content_type_must_match_actual_file():
         files={"file": ("sample.png", png_bytes(), "image/jpeg")},
     )
     assert response.status_code == 415
+
+
+def test_unsupported_mime_type_is_rejected_by_api():
+    client = TestClient(app)
+    response = client.post(
+        "/api/images/inspect",
+        files={"file": ("document.pdf", b"%PDF-1.7 test", "application/pdf")},
+    )
+    assert response.status_code == 415
+    assert response.json()["detail"] == "Unsupported image type."
+
+
+def test_upload_over_10_mb_is_rejected_before_image_decoding():
+    client = TestClient(app)
+    oversized_content = b"0" * (image_routes.MAX_UPLOAD_BYTES + 1)
+    response = client.post(
+        "/api/images/inspect",
+        files={"file": ("oversized.png", oversized_content, "image/png")},
+    )
+    assert response.status_code == 413
+    assert response.json()["detail"] == "Image exceeds the 10 MB limit."
