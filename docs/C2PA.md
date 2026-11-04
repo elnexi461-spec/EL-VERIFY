@@ -45,5 +45,7 @@ Automated tests cover:
 - Manifest summary formatting with a mocked SDK response.
 - Distinguishing an absent manifest from an SDK error.
 - A real SDK smoke test against an unsigned JPEG.
+- Signing a JPEG with a disposable test CA and leaf certificate, then inspecting it through EL-VERIFY.
+- Mutating the signed JPEG's entropy-coded image data while preserving its embedded C2PA manifest, then checking that validation reports a problem with the content binding.
 
-The test suite now creates a disposable signed JPEG during the test run using a generated ES256 key pair and a self-signed test certificate. It then sends that signed asset through EL-VERIFY's real C2PA inspection function and checks that the manifest and signature validation findings are returned. The test certificate is intentionally not a public trust anchor: this verifies the signed-manifest processing path, not production signer trust or certificate-chain acceptance. The unsigned-image SDK smoke test remains in place as a separate negative case.
+The signed-image test uses a generated ES256 key pair and a temporary CA/leaf certificate chain. The test trusts that temporary root only inside the test read context. It does not add the test root to production trust settings or claim that the signer is publicly trusted. The tampering case changes image bytes without removing the manifest, so it exercises validation of the original signed content binding rather than merely checking what happens when credentials are stripped. A validation failure is reported as a technical integrity finding, not as a conclusion that the image or its creator is fake.
