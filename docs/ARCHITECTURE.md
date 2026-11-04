@@ -1,38 +1,49 @@
-# EL-VERIFY — Architecture (Draft)
+# EL-VERIFY — Architecture
 
 ## Design goal
 
 Build a modular verification workflow that reports observable evidence and uncertainty, rather than unsupported true/false verdicts.
 
-## Initial request flow
+## Current MVP request flow
 
-1. A user uploads an image to the API.
-2. The API validates content type and size.
-3. The image-inspection service decodes the file.
-4. The service computes a SHA-256 fingerprint and extracts basic properties and available EXIF tag identifiers.
-5. The API returns a structured report with explicit limitations.
+1. A user opens the browser interface served at /app/.
+2. The browser sends an image to POST /api/images/inspect.
+3. The API enforces the allowed MIME type and 10 MB upload limit.
+4. Pillow decodes the image, verifies the file structure, enforces a pixel-count limit, and extracts basic file facts and metadata indicators.
+5. The service computes a SHA-256 fingerprint.
+6. The C2PA Python SDK inspects the submitted bytes using a short-lived temporary file.
+7. Remote manifest fetching and OCSP fetching are disabled for this workflow.
+8. The API returns a structured evidence report. Temporary files are removed after inspection.
 
-## Planned modules
+## Current modules
 
-- **EL-VISION:** image/video inspection and research-backed synthetic-media indicators.
-- **EL-SOURCE:** URL and claim source investigation using permitted, transparent sources.
-- **EL-TRACE:** metadata and content-provenance inspection.
-- **EL-IDENTITY:** investigation of public identity claims and possible impersonation using corroborating evidence, not facial identification.
-- **EL-INTELLIGENCE:** combines module findings into a human-readable evidence report.
+- **EL-VISION:** basic image inspection and C2PA Content Credentials verification.
+- **EL-TRACE:** initial file fingerprint and metadata evidence, currently implemented within EL-VISION.
+- **EL-SOURCE:** planned source and claim investigation.
+- **EL-IDENTITY:** planned public identity-claim investigation using corroborating evidence, not facial identification.
+- **EL-INTELLIGENCE:** planned evidence synthesis and human-readable reports.
 
-## Proposed later architecture
+## API contract
 
-- Frontend: Next.js.
-- API: Python / FastAPI.
-- Storage: PostgreSQL for user-authorized report metadata; object storage only when necessary.
-- Background jobs: introduce a queue only when analysis workloads require it.
-- Model layer: evaluate open models against documented datasets before deployment.
+- GET /api/health — service health.
+- POST /api/images/inspect — image properties, metadata indicators, SHA-256 and C2PA result.
 
-## Security requirements
+The C2PA result uses explicit statuses: found, absent, unsupported_format, unavailable, or unable_to_read. A found manifest includes the SDK validation state and selected validation findings. The application must not translate the presence of a manifest into a claim that the content itself is truthful.
 
-- Enforce upload size and file-type limits.
-- Treat uploaded files and URLs as untrusted input.
-- Do not fetch arbitrary URLs from the backend without SSRF protections.
-- Avoid retaining submitted media by default.
+## Security and privacy
+
+- Enforce upload size, declared content type, decoded file format and pixel-count limits.
+- Treat uploaded files as untrusted input.
+- Disable remote C2PA manifest and OCSP fetching during file inspection.
+- Use temporary files only where required by the SDK and delete them after inspection.
+- Do not retain submitted media by default.
+- Do not fetch arbitrary user-supplied URLs without SSRF protections.
 - Keep secrets in environment variables.
 - Log operational events without storing sensitive content.
+
+## Planned architecture
+
+- Add a source verification module with strict URL allowlisting and DNS/IP checks before any backend fetch.
+- Evaluate synthetic-media models against public, licensed datasets before exposing scores.
+- Add report export and optional user-controlled history only after a privacy review.
+- Introduce background jobs only when measured analysis workloads require them.
