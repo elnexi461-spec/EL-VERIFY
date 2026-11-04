@@ -1,6 +1,6 @@
 # Deploy the EL-VERIFY demo
 
-This repository includes a Render Blueprint for a small public demonstration instance.
+The public demonstration is available at https://el-verify-demo.onrender.com/app/. This repository also includes a Render Blueprint for creating a separate instance.
 
 ## Deploy
 
@@ -28,6 +28,10 @@ This repository includes a Render Blueprint for a small public demonstration ins
 - The demo does not decide whether an image is real, fake, AI-generated or misleading. Missing credentials are not proof of manipulation.
 - A public endpoint can receive unsolicited traffic. Keep the demo temporary, monitor usage and disable the service when it is no longer needed. Do not use this free deployment for production workloads.
 
+## Automated upload safeguards
+
+The backend test suite includes API-level checks for unsupported MIME types (415), files larger than 10 MB (413), and mismatches between a declared MIME type and the actual decoded image format (415). These checks exercise the API directly, because the browser file picker intentionally filters out unsupported file types.
+
 ## After deployment
 
-Copy the public Render URL into the project README and grant application only after testing the live upload and report-export flow. A successful deployment or health check alone is not enough: test a normal image, an unsupported file and an image larger than 10 MB.
+The live URL is recorded in the project README. Re-test the normal upload and JSON export flow after significant backend changes. A successful deployment or health check alone is not enough to establish production readiness.
