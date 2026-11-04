@@ -280,5 +280,6 @@ def test_real_signed_image_manifest_is_read_and_signature_is_reported(tmp_path, 
              or "binding" in str(item.get("code", "")).lower())
         for item in findings
     ), (
-        "Tampering should produce an explicit content-hash or binding mismatch finding"
+        "Tampering should produce an explicit content-hash or binding mismatch finding. "
+        f"State={tampered_result['validation_state']}; findings={findings!r}"
     )
